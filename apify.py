@@ -100,7 +100,10 @@ def run_sales_nav_scraper(
 
 
 if __name__ == "__main__":
-    url = "https://www.linkedin.com/sales/search/people?query=(filters%3AList((type%3ACURRENT_COMPANY%2Cvalues%3AList((id%3A35921%2CselectionType%3AINCLUDED)))%2C(type%3APERSONA%2Cvalues%3AList((id%3A1962673041%2CselectionType%3AINCLUDED)))))&sessionId=jEQhyR76Ri%2BNSaBgRe%2FbAg%3D%3D"
+    industry_link = "https://www.linkedin.com/sales/search/company?query=(filters%3AList((type%3AINDUSTRY%2Cvalues%3AList((id%3A19%2Ctext%3ARetail%2520Apparel%2520and%2520Fashion%2CselectionType%3AINCLUDED)))%2C(type%3ACOMPANY_HEADCOUNT%2Cvalues%3AList((id%3AE%2Ctext%3A201-500%2CselectionType%3AINCLUDED)))))&sessionId=dgbhZuu3QVqdHItpMZuBFA%3D%3D&viewAllFilters=true"
+    personal_link = "https://www.linkedin.com/sales/search/people?query=(filters%3AList((type%3ACURRENT_COMPANY%2Cvalues%3AList((id%3A35921%2CselectionType%3AINCLUDED)))%2C(type%3APERSONA%2Cvalues%3AList((id%3A1962673041%2CselectionType%3AINCLUDED)))))&sessionId=jEQhyR76Ri%2BNSaBgRe%2FbAg%3D%3D"
+
+    url = industry_link
 
     results, meta = run_sales_nav_scraper(url, total_records=25, deep_scrape=False)
 
