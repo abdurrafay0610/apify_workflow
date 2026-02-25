@@ -13,58 +13,6 @@ class ActorRunError(RuntimeError):
     pass
 
 
-def _normalize_linkedin_cookies(li_at_or_json: str) -> Any:
-    """
-    Accept either:
-    1) raw li_at value  -> returns [{"name":"li_at","value":..., "domain":".linkedin.com"}]
-    2) JSON string (array or object) -> returns parsed JSON as-is
-       (many actors expect Chrome-exported cookies array)
-    """
-    s = (li_at_or_json or "").strip()
-    if not s:
-        raise ValueError("Empty LinkedIn cookie input")
-
-    # If user provided JSON (array/object), pass through parsed JSON
-    if s.startswith("[") or s.startswith("{"):
-        return json.loads(s)
-
-    # Otherwise treat as li_at value
-    return [{"name": "li_at", "value": s, "domain": ".linkedin.com"}]
-
-def cookies_json_to_cookie_string(cookies: List[Dict[str, Any]]) -> str:
-    """
-    Convert Chrome-exported cookies JSON array to a Cookie header string:
-    "name=value; name2=value2; ..."
-    """
-    parts = []
-    for c in cookies:
-        name = c.get("name")
-        value = c.get("value")
-        if not name or value is None:
-            continue
-        # Keep values exactly as exported (JSESSIONID often includes quotes)
-        parts.append(f"{name}={value}")
-    return "; ".join(parts) + ";"
-
-def load_cookie_string_from_env() -> str:
-    """
-    Loads cookie string either directly from LINKEDIN_COOKIE_STRING
-    or converts LINKEDIN_COOKIES_JSON (Chrome export) into cookieString.
-    """
-    direct = (os.environ.get("LINKEDIN_COOKIE_STRING") or "").strip()
-    if direct:
-        return direct
-
-    raw_json = (os.getenv("LINKEDIN_COOKIES_JSON", "").strip() or "").strip()
-    if not raw_json:
-        raise ValueError("Set LINKEDIN_COOKIE_STRING or LINKEDIN_COOKIES_JSON env var.")
-
-    cookies = json.loads(raw_json)
-    if not isinstance(cookies, list):
-        raise ValueError("LINKEDIN_COOKIES_JSON must be a JSON array (list of cookie objects).")
-
-    return cookies_json_to_cookie_string(cookies)
-
 def run_sales_nav_scraper(
     search_url: str,
     *,
@@ -81,34 +29,21 @@ def run_sales_nav_scraper(
     actor_id: str = "quantifiable_extension/linkedin-sales-navigator-scraper",
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     apify_token = os.getenv("APIFY_TOKEN")
+    cookieString = os.getenv("COOKIE_STRING")
+
     if not apify_token:
         raise ValueError("Set APIFY_TOKEN env var.")
 
-    # Provide either:
-    # - LINKEDIN_LI_AT: just the li_at value
-    # - LINKEDIN_COOKIES_JSON: Chrome-exported cookies JSON (recommended if actor expects full cookie jar)
-    li_at = os.getenv("LINKEDIN_LI_AT", "").strip()
-    cookies_json = os.getenv("LINKEDIN_COOKIES_JSON", "").strip()
-
-    cookie_input = cookies_json or li_at
-    if not cookie_input:
-        raise ValueError("Set LINKEDIN_LI_AT or LINKEDIN_COOKIES_JSON env var.")
-
-    linkedin_cookies = _normalize_linkedin_cookies(cookie_input)
-    # cookieString = load_cookie_string_from_env()
+    # Read README on how to get this COOKIE_STRING
+    if not cookieString:
+        raise ValueError("Set COOKIE_STRING env var.")
 
     client = ApifyClient(apify_token)
 
     # ---- IMPORTANT: Actor requires input.searchUrl (per your error) ----
     run_input: Dict[str, Any] = {
         "searchUrl": search_url,  # ✅ required by your actor
-
-        # Try both common cookie field names.
-        # Keep whichever your actor schema actually uses; leaving both is sometimes rejected by strict schemas.
-        "cookies": linkedin_cookies,
-        "linkedinCookies": linkedin_cookies,
-        "cookieString": cookies_json,
-
+        "cookieString": cookieString,
         # Try both common field name variants (your actor will accept whichever matches schema)
         "totalRecords": total_records,
         "totalRecordsToScrape": total_records,
