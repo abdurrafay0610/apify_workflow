@@ -106,4 +106,4 @@ if __name__ == "__main__":
 
     print("Run metadata:", meta)
     print("Number of items returned:", len(results))
-    print("First item:", results[0] if results else "No data returned.")
+    print("All items:", results if results else "No data returned.")
