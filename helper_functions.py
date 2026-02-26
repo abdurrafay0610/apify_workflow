@@ -215,14 +215,14 @@ def convert_multiple_person_json(results: List[Dict[str, Any]]):
     return rows
 
 
-def scrape_industry(industry_link, page_name):
+def scrape_industry(industry_link, sheet_id, page_name):
     """
 
     :param industry_link:
     :return:
     """
     # Initialize sheet queue handler
-    sheets_queue = google_sheets_queue(page_name)
+    sheets_queue = google_sheets_queue(sheet_id, page_name)
     sheets_queue.start_worker()
 
     # Scrape the result
@@ -244,14 +244,14 @@ def scrape_industry(industry_link, page_name):
         time.sleep(1)
 
 
-def scrape_personal(personal_link, page_name):
+def scrape_personal(personal_link, sheet_id, page_name):
     """
 
     :param personal_link:
     :return:
     """
     # Initialize sheet queue handler
-    sheets_queue = google_sheets_queue(page_name)
+    sheets_queue = google_sheets_queue(sheet_id, page_name)
     sheets_queue.start_worker()
 
     # Scrape the result
