@@ -240,7 +240,8 @@ def scrape_industry(industry_link, sheet_id, page_name):
         sheets_queue.enqueue(data)
 
     # Wait until all the items have not been uploaded to the sheet
-    if sheets_queue.size() > 0:
+    while sheets_queue.size() > 0:
+        print(f"Waiting for all entries to be uplodaed to google sheets. Remaining entries: {sheets_queue.size()}")
         time.sleep(1)
 
 
@@ -269,5 +270,5 @@ def scrape_personal(personal_link, sheet_id, page_name):
         sheets_queue.enqueue(data)
 
     # Wait until all the items have not been uploaded to the sheet
-    if sheets_queue.size() > 0:
+    while sheets_queue.size() > 0:
         time.sleep(1)
