@@ -5,8 +5,9 @@ import google_spread_sheet
 
 
 class google_sheets_queue:
-    def __init__(self, sheet_name):
+    def __init__(self, sheet_id, sheet_name):
         self.items = []
+        self.sheet_id = sheet_id
         self.sheet_name = sheet_name
         self.is_dequeue_safe = True
 
@@ -42,7 +43,7 @@ class google_sheets_queue:
                 if not self.is_empty() and self.is_dequeue_safe:
                     item = self.dequeue()
                     # Process the item (save to Google Sheets)
-                    google_spread_sheet.append_or_create_tab_by_id(self.sheet_name, item)
+                    google_spread_sheet.append_or_create_tab_by_id(self.sheet_id, self.sheet_name, item)
                 else:
                     time.sleep(10)
             except Exception as e:
