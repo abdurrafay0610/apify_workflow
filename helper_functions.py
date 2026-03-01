@@ -1,3 +1,4 @@
+import random
 import time
 from urllib.parse import urlparse
 
@@ -215,18 +216,18 @@ def convert_multiple_person_json(results: List[Dict[str, Any]]):
     return rows
 
 
-def scrape_industry(industry_link, sheet_id, page_name):
+def scrape_industry(industry_link, google_sheet_id, google_sheet_page_name, search_start_page):
     """
 
     :param industry_link:
     :return:
     """
     # Initialize sheet queue handler
-    sheets_queue = google_sheets_queue(sheet_id, page_name)
+    sheets_queue = google_sheets_queue(google_sheet_id, google_sheet_page_name)
     sheets_queue.start_worker()
 
     # Scrape the result
-    results, meta = run_sales_nav_scraper(industry_link, total_records=25, deep_scrape=False)
+    results, meta = run_sales_nav_scraper(search_url=industry_link, total_records=25, deep_scrape=False, start_page=search_start_page)
     # Get them in a csv format
 
     csv_data = convert_multiple_json(results)
@@ -244,6 +245,24 @@ def scrape_industry(industry_link, sheet_id, page_name):
         print(f"Waiting for all entries to be uplodaed to google sheets. Remaining entries: {sheets_queue.size()}")
         time.sleep(1)
 
+def scrape_industry_complete(industry_link, google_sheet_id, google_sheet_page_name, search_max_page: int):
+    """
+
+    :param industry_link:
+    :param google_sheet_id:
+    :param google_sheet_page_name:
+    :param search_max_page:
+    :return:
+    """
+    for i in range(1, search_max_page):
+        print("Starting scraping")
+        scrape_industry(industry_link=industry_link, google_sheet_id=google_sheet_id, google_sheet_page_name=google_sheet_page_name, search_start_page=i)
+        # A random (not fixed) sleep between scrape attempts
+        print("Waiting a random amount (around 1 min to 3min)")
+        time.sleep(random.randint(60, 180))
+        print("Random wait complete")
+
+
 
 def scrape_personal(personal_link, sheet_id, page_name):
     """
@@ -256,7 +275,7 @@ def scrape_personal(personal_link, sheet_id, page_name):
     sheets_queue.start_worker()
 
     # Scrape the result
-    results, meta = run_sales_nav_scraper(personal_link, total_records=25, deep_scrape=False)
+    results, meta = run_sales_nav_scraper(search_url=personal_link, total_records=25, deep_scrape=False)
     # Get them in a csv format
 
     csv_data = convert_multiple_person_json(results)
