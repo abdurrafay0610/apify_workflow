@@ -333,6 +333,8 @@ def scrape_industry(industry_link, google_sheet_id, google_sheet_page_name, sear
         print(f"Waiting for all entries to be uploaded to google sheets. Remaining entries: {sheets_queue.size()}")
         time.sleep(1)
 
+    return csv_data
+
 def scrape_industry_complete(industry_link, google_sheet_id, google_sheet_page_name, search_max_page: int):
     """
     :param industry_link:
@@ -343,8 +345,19 @@ def scrape_industry_complete(industry_link, google_sheet_id, google_sheet_page_n
     """
     for i in range(1, search_max_page):
         print("Starting scraping")
-        scrape_industry(industry_link=industry_link, google_sheet_id=google_sheet_id, google_sheet_page_name=google_sheet_page_name, search_start_page=i)
+        csv_data = scrape_industry(industry_link=industry_link, google_sheet_id=google_sheet_id, google_sheet_page_name=google_sheet_page_name, search_start_page=i)
         # A random (not fixed) sleep between scrape attempts
         print("Waiting a random amount (around 3 min to 5min)")
         time.sleep(random.randint(180, 300))
         print("Random wait complete")
+
+        print("Scrapping the personals from the extracted industries started...")
+        for i in range(1, len(csv_data)):
+            # The company name is present at csv_data[i][0]
+            company_name = csv_data[i][0]
+            # The company sales navigator link is present at csv_data[i][2]
+            company_sales_url = csv_data[i][2]
+            # Now scrapping the hr persona, the id of the hr persona is: 1962673041
+            # The sheet name will be the same as the company name
+            scrape_personal_complete(company_sales_url=company_sales_url, persona_id="1962673041", google_sheet_id=google_sheet_id, google_sheet_page_name=company_name)
+        print("Scrapping the personals from the extracted industries completed...")
