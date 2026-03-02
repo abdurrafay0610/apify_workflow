@@ -1,6 +1,8 @@
 import random
 import time
 from urllib.parse import urlparse
+import urllib.parse
+import re
 
 from apify_api import run_sales_nav_scraper
 from google_spread_sheet_queue import google_sheets_queue
@@ -218,8 +220,10 @@ def convert_multiple_person_json(results: List[Dict[str, Any]]):
 
 def scrape_industry(industry_link, google_sheet_id, google_sheet_page_name, search_start_page):
     """
-
     :param industry_link:
+    :param google_sheet_id:
+    :param google_sheet_page_name
+    :param search_start_page
     :return:
     """
     # Initialize sheet queue handler
@@ -242,12 +246,11 @@ def scrape_industry(industry_link, google_sheet_id, google_sheet_page_name, sear
 
     # Wait until all the items have not been uploaded to the sheet
     while sheets_queue.size() > 0:
-        print(f"Waiting for all entries to be uplodaed to google sheets. Remaining entries: {sheets_queue.size()}")
+        print(f"Waiting for all entries to be uploaded to google sheets. Remaining entries: {sheets_queue.size()}")
         time.sleep(1)
 
 def scrape_industry_complete(industry_link, google_sheet_id, google_sheet_page_name, search_max_page: int):
     """
-
     :param industry_link:
     :param google_sheet_id:
     :param google_sheet_page_name:
@@ -258,20 +261,57 @@ def scrape_industry_complete(industry_link, google_sheet_id, google_sheet_page_n
         print("Starting scraping")
         scrape_industry(industry_link=industry_link, google_sheet_id=google_sheet_id, google_sheet_page_name=google_sheet_page_name, search_start_page=i)
         # A random (not fixed) sleep between scrape attempts
-        print("Waiting a random amount (around 1 min to 3min)")
-        time.sleep(random.randint(60, 180))
+        print("Waiting a random amount (around 3 min to 5min)")
+        time.sleep(random.randint(180, 300))
         print("Random wait complete")
 
+def build_sales_nav_persona_url(company_sales_url: str, persona_id: str) -> str:
+    """
+    Builds a LinkedIn Sales Navigator People Search URL
+    filtered by:
+        - Current Company (extracted from company_sales_url)
+        - Persona (persona_id provided)
 
+    Args:
+        company_sales_url (str): e.g. https://www.linkedin.com/sales/company/3997479
+        persona_id (str): e.g. 1962673041 (HR Persona ID)
 
-def scrape_personal(personal_link, sheet_id, page_name):
+    Returns:
+        str: Fully encoded Sales Navigator search URL
     """
 
+    # Extract company ID using regex (safer than split)
+    match = re.search(r'/sales/company/(\d+)', company_sales_url)
+    if not match:
+        raise ValueError("Invalid Sales Navigator company URL format.")
+
+    company_id = match.group(1)
+
+    # Construct raw query string (LinkedIn format)
+    raw_query = (
+        f"(filters:List("
+        f"(type:CURRENT_COMPANY,values:List((id:{company_id},selectionType:INCLUDED))),"
+        f"(type:PERSONA,values:List((id:{persona_id},selectionType:INCLUDED)))"
+        f")))"
+    )
+
+    # URL encode query
+    encoded_query = urllib.parse.quote(raw_query)
+
+    # Final URL
+    final_url = f"https://www.linkedin.com/sales/search/people?query={encoded_query}"
+
+    return final_url
+
+def scrape_personal(personal_link, google_sheet_id, google_sheet_page_name):
+    """
     :param personal_link:
+    :param google_sheet_id:
+    :param google_sheet_page_name
     :return:
     """
     # Initialize sheet queue handler
-    sheets_queue = google_sheets_queue(sheet_id, page_name)
+    sheets_queue = google_sheets_queue(google_sheet_id, google_sheet_page_name)
     sheets_queue.start_worker()
 
     # Scrape the result
@@ -291,3 +331,15 @@ def scrape_personal(personal_link, sheet_id, page_name):
     # Wait until all the items have not been uploaded to the sheet
     while sheets_queue.size() > 0:
         time.sleep(1)
+
+def scrape_personal_complete(company_sales_url, persona_id, google_sheet_id, google_sheet_page_name):
+    """
+
+    :param company_sales_url:
+    :param persona_id
+    :param google_sheet_id:
+    :param google_sheet_page_name:
+    :return:
+    """
+    company_hr_personal_link = build_sales_nav_persona_url(company_sales_url=company_sales_url, persona_id=persona_id)
+    scrape_personal(personal_link=company_hr_personal_link, google_sheet_id=google_sheet_id, google_sheet_page_name=google_sheet_page_name)
