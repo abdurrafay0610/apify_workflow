@@ -272,7 +272,11 @@ def scrape_personal(personal_link, google_sheet_id, google_sheet_page_name):
     # Get them in a csv format
 
     csv_data = convert_multiple_person_json(results)
-    print(csv_data)
+
+    print("")
+    print("csv_data:", csv_data)
+    print("")
+
     # Save to redis for record keeping
 
     # redis code here
@@ -283,6 +287,7 @@ def scrape_personal(personal_link, google_sheet_id, google_sheet_page_name):
 
     # Wait until all the items have not been uploaded to the sheet
     while sheets_queue.size() > 0:
+        print(f"Waiting for all entries to be uploaded to google sheets. Remaining entries: {sheets_queue.size()}")
         time.sleep(1)
 
 def scrape_personal_complete(company_sales_url, persona_id, google_sheet_id, google_sheet_page_name):
@@ -352,12 +357,17 @@ def scrape_industry_complete(industry_link, google_sheet_id, google_sheet_page_n
         print("Random wait complete")
 
         print("Scrapping the personals from the extracted industries started...")
+        """
+        Example csv_data format:
+        [['Company Name', 'Linkedin URL', 'Sales Navigator URL', 'Website', 'Employee Count', 'Overview', 'Headquarters', 'Total Jobs', 'Job Titles', 'Frequent Jobs'], ['Call Center Pros', 'https://www.linkedin.com/company/4792684/', 'https://www.linkedin.com/sales/company/4792684/', '', '', '', '', '', '', '']]
+        [['Company Name', 'Linkedin URL', 'Sales Navigator URL', 'Website', 'Employee Count', 'Overview', 'Headquarters', 'Total Jobs', 'Job Titles', 'Frequent Jobs'], ['Center Source Group', 'https://www.linkedin.com/company/3997479/', 'https://www.linkedin.com/sales/company/3997479/', '', '', '', '', '', '', '']]
+        [['Company Name', 'Linkedin URL', 'Sales Navigator URL', 'Website', 'Employee Count', 'Overview', 'Headquarters', 'Total Jobs', 'Job Titles', 'Frequent Jobs'], ['BPO Data Entry Help', 'https://www.linkedin.com/company/3858683/', 'https://www.linkedin.com/sales/company/3858683/', '', '', '', '', '', '', '']]
+        """
+
         for i in range(1, len(csv_data)):
-            # The company name is present at csv_data[i][0]
-            company_name = csv_data[i][0]
-            # The company sales navigator link is present at csv_data[i][2]
-            company_sales_url = csv_data[i][2]
+            # The company sales navigator link is present at csv_data[i][1][2]
+            company_sales_url = csv_data[i][1][2]
             # Now scrapping the hr persona, the id of the hr persona is: 1962673041
             # The sheet name will be the same as the company name
-            scrape_personal_complete(company_sales_url=company_sales_url, persona_id="1962673041", google_sheet_id=google_sheet_id, google_sheet_page_name=company_name)
+            scrape_personal_complete(company_sales_url=company_sales_url, persona_id="1962673041", google_sheet_id=google_sheet_id, google_sheet_page_name="Sale Navigator Leads (Personal)")
         print("Scrapping the personals from the extracted industries completed...")

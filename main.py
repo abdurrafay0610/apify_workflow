@@ -74,5 +74,6 @@ linkedin_profile = "https://www.linkedin.com/company/call-center-pros/about/"
 
 retail_industry_link = "https://www.linkedin.com/sales/search/company?savedSearchId=1963691545&sessionId=k06SRRdkS2uGA2fqr0T7lw%3D%3D"
 staffing_industry_link = "https://www.linkedin.com/sales/search/company?savedSearchId=1963691529&sessionId=vGFF1sPZRgSk2a7J8abKFw%3D%3D"
+callcenter_industry_link = "https://www.linkedin.com/sales/search/company?_ntb=QuQmM4GBQgGcWgUGJiOeCA%3D%3D&savedSearchId=1963691625&sessionId=QuQmM4GBQgGcWgUGJiOeCA%3D%3D"
 
-scrape_industry_complete(industry_link=retail_industry_link, google_sheet_id="1sgglueM-EXDb43Wh89Q3e_ZNbupBBKH3XExvPqNq1W8", google_sheet_page_name="Sales Navigator Companies Master Sheet", search_max_page=12)
+scrape_industry_complete(industry_link=callcenter_industry_link, google_sheet_id="1unzkP4y1HV5cCTxM5AxJgQTHSb0-iAq8sf-2T_S-9_0", google_sheet_page_name="Sales Navigator Companies Master Sheet", search_max_page=12)
