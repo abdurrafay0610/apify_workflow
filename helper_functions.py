@@ -46,6 +46,45 @@ def linkedin_to_sales_company_url(company_url: str) -> str:
         print(f"[EXCEPTION] linkedin_to_sales_company_url: {e}")
         return ""
 
+def build_sales_nav_persona_url(company_sales_url: str, persona_id: str) -> str:
+    """
+    Builds a LinkedIn Sales Navigator People Search URL
+    filtered by:
+        - Current Company (extracted from company_sales_url)
+        - Persona (persona_id provided)
+
+    Args:
+        company_sales_url (str): e.g. https://www.linkedin.com/sales/company/3997479
+        persona_id (str): e.g. 1962673041 (HR Persona ID)
+
+    Returns:
+        str: Fully encoded Sales Navigator search URL
+    """
+
+    # Extract company ID using regex (safer than split)
+    match = re.search(r'/sales/company/(\d+)', company_sales_url)
+    if not match:
+        raise ValueError("Invalid Sales Navigator company URL format.")
+
+    company_id = match.group(1)
+
+    # Construct raw query string (LinkedIn format)
+    raw_query = (
+        f"(filters:List("
+        f"(type:CURRENT_COMPANY,values:List((id:{company_id},selectionType:INCLUDED))),"
+        f"(type:PERSONA,values:List((id:{persona_id},selectionType:INCLUDED)))"
+        f")))"
+    )
+
+    # URL encode query
+    encoded_query = urllib.parse.quote(raw_query)
+
+    # Final URL
+    final_url = f"https://www.linkedin.com/sales/search/people?query={encoded_query}"
+
+    return final_url
+
+
 def convert_json_to_csv_row(result: dict):
     """
     Converts a Sales Navigator JSON result into a CSV row
@@ -217,6 +256,51 @@ def convert_multiple_person_json(results: List[Dict[str, Any]]):
         rows.append(row)
     return rows
 
+def scrape_personal(personal_link, google_sheet_id, google_sheet_page_name):
+    """
+    :param personal_link:
+    :param google_sheet_id:
+    :param google_sheet_page_name
+    :return:
+    """
+    # Initialize sheet queue handler
+    sheets_queue = google_sheets_queue(google_sheet_id, google_sheet_page_name)
+    sheets_queue.start_worker()
+
+    # Scrape the result
+    results, meta = run_sales_nav_scraper(search_url=personal_link, total_records=25, deep_scrape=False)
+    # Get them in a csv format
+
+    csv_data = convert_multiple_person_json(results)
+    print(csv_data)
+    # Save to redis for record keeping
+
+    # redis code here
+
+    # Upload the data to google spreadsheet
+    for data in csv_data:
+        sheets_queue.enqueue(data)
+
+    # Wait until all the items have not been uploaded to the sheet
+    while sheets_queue.size() > 0:
+        time.sleep(1)
+
+def scrape_personal_complete(company_sales_url, persona_id, google_sheet_id, google_sheet_page_name):
+    """
+
+    :param company_sales_url:
+    :param persona_id
+    :param google_sheet_id:
+    :param google_sheet_page_name:
+    :return:
+    """
+    print(f"scrape_personal_complete started for: {company_sales_url}")
+    company_hr_personal_link = build_sales_nav_persona_url(company_sales_url=company_sales_url, persona_id=persona_id)
+    scrape_personal(personal_link=company_hr_personal_link, google_sheet_id=google_sheet_id, google_sheet_page_name=google_sheet_page_name)
+    print("Waiting a random amount (around 3 min to 5min)")
+    time.sleep(random.randint(180, 300))
+    print("Random wait complete")
+    print(f"scrape_personal_complete finished for: {company_sales_url}")
 
 def scrape_industry(industry_link, google_sheet_id, google_sheet_page_name, search_start_page):
     """
@@ -264,82 +348,3 @@ def scrape_industry_complete(industry_link, google_sheet_id, google_sheet_page_n
         print("Waiting a random amount (around 3 min to 5min)")
         time.sleep(random.randint(180, 300))
         print("Random wait complete")
-
-def build_sales_nav_persona_url(company_sales_url: str, persona_id: str) -> str:
-    """
-    Builds a LinkedIn Sales Navigator People Search URL
-    filtered by:
-        - Current Company (extracted from company_sales_url)
-        - Persona (persona_id provided)
-
-    Args:
-        company_sales_url (str): e.g. https://www.linkedin.com/sales/company/3997479
-        persona_id (str): e.g. 1962673041 (HR Persona ID)
-
-    Returns:
-        str: Fully encoded Sales Navigator search URL
-    """
-
-    # Extract company ID using regex (safer than split)
-    match = re.search(r'/sales/company/(\d+)', company_sales_url)
-    if not match:
-        raise ValueError("Invalid Sales Navigator company URL format.")
-
-    company_id = match.group(1)
-
-    # Construct raw query string (LinkedIn format)
-    raw_query = (
-        f"(filters:List("
-        f"(type:CURRENT_COMPANY,values:List((id:{company_id},selectionType:INCLUDED))),"
-        f"(type:PERSONA,values:List((id:{persona_id},selectionType:INCLUDED)))"
-        f")))"
-    )
-
-    # URL encode query
-    encoded_query = urllib.parse.quote(raw_query)
-
-    # Final URL
-    final_url = f"https://www.linkedin.com/sales/search/people?query={encoded_query}"
-
-    return final_url
-
-def scrape_personal(personal_link, google_sheet_id, google_sheet_page_name):
-    """
-    :param personal_link:
-    :param google_sheet_id:
-    :param google_sheet_page_name
-    :return:
-    """
-    # Initialize sheet queue handler
-    sheets_queue = google_sheets_queue(google_sheet_id, google_sheet_page_name)
-    sheets_queue.start_worker()
-
-    # Scrape the result
-    results, meta = run_sales_nav_scraper(search_url=personal_link, total_records=25, deep_scrape=False)
-    # Get them in a csv format
-
-    csv_data = convert_multiple_person_json(results)
-    print(csv_data)
-    # Save to redis for record keeping
-
-    # redis code here
-
-    # Upload the data to google spreadsheet
-    for data in csv_data:
-        sheets_queue.enqueue(data)
-
-    # Wait until all the items have not been uploaded to the sheet
-    while sheets_queue.size() > 0:
-        time.sleep(1)
-
-def scrape_personal_complete(company_sales_url, persona_id, google_sheet_id, google_sheet_page_name):
-    """
-
-    :param company_sales_url:
-    :param persona_id
-    :param google_sheet_id:
-    :param google_sheet_page_name:
-    :return:
-    """
-    company_hr_personal_link = build_sales_nav_persona_url(company_sales_url=company_sales_url, persona_id=persona_id)
-    scrape_personal(personal_link=company_hr_personal_link, google_sheet_id=google_sheet_id, google_sheet_page_name=google_sheet_page_name)
