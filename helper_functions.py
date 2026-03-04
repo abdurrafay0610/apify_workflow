@@ -290,8 +290,10 @@ def scrape_personal(personal_link, google_sheet_id, google_sheet_page_name):
         while sheets_queue.size() > 0:
             print(f"Waiting for all entries to be uploaded to google sheets. Remaining entries: {sheets_queue.size()}")
             time.sleep(1)
+        return csv_data
     except Exception as e:
         print(f"Exception in scrape_personal_complete: {e}")
+        return None
 
 def scrape_personal_complete(company_sales_url, persona_id, google_sheet_id, google_sheet_page_name):
     """
@@ -305,13 +307,15 @@ def scrape_personal_complete(company_sales_url, persona_id, google_sheet_id, goo
     try:
         print(f"scrape_personal_complete started for: {company_sales_url}")
         company_hr_personal_link = build_sales_nav_persona_url(company_sales_url=company_sales_url, persona_id=persona_id)
-        scrape_personal(personal_link=company_hr_personal_link, google_sheet_id=google_sheet_id, google_sheet_page_name=google_sheet_page_name)
+        csv_data = scrape_personal(personal_link=company_hr_personal_link, google_sheet_id=google_sheet_id, google_sheet_page_name=google_sheet_page_name)
         print("Waiting a random amount (around 3 min to 5min)")
         time.sleep(random.randint(180, 300))
         print("Random wait complete")
         print(f"scrape_personal_complete finished for: {company_sales_url}")
+        return csv_data
     except Exception as e:
         print(f"Exception in scrape_personal_complete: {e}")
+        return None
 
 def scrape_industry(industry_link, google_sheet_id, google_sheet_page_name, search_start_page):
     """
@@ -370,10 +374,19 @@ def scrape_industry_complete(industry_link, google_sheet_id, google_sheet_page_n
         [['Company Name', 'Linkedin URL', 'Sales Navigator URL', 'Website', 'Employee Count', 'Overview', 'Headquarters', 'Total Jobs', 'Job Titles', 'Frequent Jobs'], ['BPO Data Entry Help', 'https://www.linkedin.com/company/3858683/', 'https://www.linkedin.com/sales/company/3858683/', '', '', '', '', '', '', '']]
         """
 
+        failed_industries = []
         for i in range(0, len(csv_data) - 1):
             # The company sales navigator link is present at csv_data[i][1][2]
             company_sales_url = csv_data[i][1][2]
             # Now scrapping the hr persona, the id of the hr persona is: 1962673041
             # The sheet name will be the same as the company name
-            scrape_personal_complete(company_sales_url=company_sales_url, persona_id="1962673041", google_sheet_id=google_sheet_id, google_sheet_page_name="Sale Navigator Leads (Personal)")
+            personal_csv_data = scrape_personal_complete(company_sales_url=company_sales_url, persona_id="1962673041", google_sheet_id=google_sheet_id, google_sheet_page_name="Sale Navigator Leads (Personal)")
+            if personal_csv_data is None:
+                failed_industries.append(csv_data[i])
+
         print("Scrapping the personals from the extracted industries completed...")
+        print("")
+        print("******************************************************************")
+        print("Following industries failed:")
+        print("******************************************************************")
+        print(failed_industries)
