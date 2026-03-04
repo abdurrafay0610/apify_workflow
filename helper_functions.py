@@ -263,32 +263,35 @@ def scrape_personal(personal_link, google_sheet_id, google_sheet_page_name):
     :param google_sheet_page_name
     :return:
     """
-    # Initialize sheet queue handler
-    sheets_queue = google_sheets_queue(google_sheet_id, google_sheet_page_name)
-    sheets_queue.start_worker()
+    try:
+        # Initialize sheet queue handler
+        sheets_queue = google_sheets_queue(google_sheet_id, google_sheet_page_name)
+        sheets_queue.start_worker()
 
-    # Scrape the result
-    results, meta = run_sales_nav_scraper(search_url=personal_link, total_records=25, deep_scrape=False)
-    # Get them in a csv format
+        # Scrape the result
+        results, meta = run_sales_nav_scraper(search_url=personal_link, total_records=25, deep_scrape=False)
+        # Get them in a csv format
 
-    csv_data = convert_multiple_person_json(results)
+        csv_data = convert_multiple_person_json(results)
 
-    print("")
-    print("csv_data:", csv_data)
-    print("")
+        print("")
+        print("csv_data:", csv_data)
+        print("")
 
-    # Save to redis for record keeping
+        # Save to redis for record keeping
 
-    # redis code here
+        # redis code here
 
-    # Upload the data to google spreadsheet
-    for data in csv_data:
-        sheets_queue.enqueue(data)
+        # Upload the data to google spreadsheet
+        for data in csv_data:
+            sheets_queue.enqueue(data)
 
-    # Wait until all the items have not been uploaded to the sheet
-    while sheets_queue.size() > 0:
-        print(f"Waiting for all entries to be uploaded to google sheets. Remaining entries: {sheets_queue.size()}")
-        time.sleep(1)
+        # Wait until all the items have not been uploaded to the sheet
+        while sheets_queue.size() > 0:
+            print(f"Waiting for all entries to be uploaded to google sheets. Remaining entries: {sheets_queue.size()}")
+            time.sleep(1)
+    except Exception as e:
+        print(f"Exception in scrape_personal_complete: {e}")
 
 def scrape_personal_complete(company_sales_url, persona_id, google_sheet_id, google_sheet_page_name):
     """
@@ -299,13 +302,16 @@ def scrape_personal_complete(company_sales_url, persona_id, google_sheet_id, goo
     :param google_sheet_page_name:
     :return:
     """
-    print(f"scrape_personal_complete started for: {company_sales_url}")
-    company_hr_personal_link = build_sales_nav_persona_url(company_sales_url=company_sales_url, persona_id=persona_id)
-    scrape_personal(personal_link=company_hr_personal_link, google_sheet_id=google_sheet_id, google_sheet_page_name=google_sheet_page_name)
-    print("Waiting a random amount (around 3 min to 5min)")
-    time.sleep(random.randint(180, 300))
-    print("Random wait complete")
-    print(f"scrape_personal_complete finished for: {company_sales_url}")
+    try:
+        print(f"scrape_personal_complete started for: {company_sales_url}")
+        company_hr_personal_link = build_sales_nav_persona_url(company_sales_url=company_sales_url, persona_id=persona_id)
+        scrape_personal(personal_link=company_hr_personal_link, google_sheet_id=google_sheet_id, google_sheet_page_name=google_sheet_page_name)
+        print("Waiting a random amount (around 3 min to 5min)")
+        time.sleep(random.randint(180, 300))
+        print("Random wait complete")
+        print(f"scrape_personal_complete finished for: {company_sales_url}")
+    except Exception as e:
+        print(f"Exception in scrape_personal_complete: {e}")
 
 def scrape_industry(industry_link, google_sheet_id, google_sheet_page_name, search_start_page):
     """
@@ -364,7 +370,7 @@ def scrape_industry_complete(industry_link, google_sheet_id, google_sheet_page_n
         [['Company Name', 'Linkedin URL', 'Sales Navigator URL', 'Website', 'Employee Count', 'Overview', 'Headquarters', 'Total Jobs', 'Job Titles', 'Frequent Jobs'], ['BPO Data Entry Help', 'https://www.linkedin.com/company/3858683/', 'https://www.linkedin.com/sales/company/3858683/', '', '', '', '', '', '', '']]
         """
 
-        for i in range(1, len(csv_data)):
+        for i in range(0, len(csv_data) - 1):
             # The company sales navigator link is present at csv_data[i][1][2]
             company_sales_url = csv_data[i][1][2]
             # Now scrapping the hr persona, the id of the hr persona is: 1962673041
